@@ -1,3 +1,30 @@
+# Release 0.1.1 – CI & PyPI Maintenance Release 🔧
+
+**Release date:** 2026-08-21
+
+This is a maintenance release focused on improving the project's build infrastructure and release automation. No functional changes have been made to the library code – **numpy-cache** remains as fast and reliable as in v0.1.0.
+
+---
+
+## What's Changed
+
+### 🔧 Infrastructure Improvements
+
+- **CI pipeline fully stabilized** – all workflows now pass on Python 3.12–3.14 across Linux, macOS.
+- **PyPI releases automated** – binary wheels (manylinux, musllinux, macOS, Windows) are now built and uploaded automatically.
+
+---
+
+## Why Upgrade?
+
+While v0.1.0 was already stable and production-ready, v0.1.1 ensures that:
+
+- **Installing** via `pip install numpy-cache` works seamlessly on all modern platforms.
+- **Contributing** is easier – CI tests run reliably for all pull requests.
+- **Releasing** future versions will be fully automated and consistent.
+
+No changes are required to your existing code.
+
 # Release 0.1.0 – First Public Release 🚀
 
 We are excited to announce the first release of **numpy-cache** – a lightweight, high‑performance disk cache for NumPy arrays powered by LZ4 compression.
