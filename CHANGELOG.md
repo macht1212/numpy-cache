@@ -1,6 +1,7 @@
 # Changelog
 
 ## [0.1.2] – 2026-08-xx
+
 ### Added
 - New `inspect()` function to read and display the header of a cache file without loading the actual data. Returns a dictionary containing magic, version, ndim, dtype, shape, and sizes.
 - Supporting C helper functions: `shape_to_tuple`, `create_array_from_header`, `validate_header_size`, and `header_to_dict` for cleaner and safer header handling.
