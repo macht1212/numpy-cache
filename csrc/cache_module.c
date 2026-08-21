@@ -140,6 +140,84 @@ static int read_cache_file(const char* path, CacheHeader* header, void** compres
   return 0;
 }
 
+static PyObject* shape_to_tuple(const CacheHeader* header) {
+    PyObject* shape_tuple = PyTuple_New(header->ndim);
+    if (!shape_tuple) return NULL;
+    
+    for (uint32_t i = 0; i < header->ndim; ++i) {
+        PyObject* item = PyLong_FromUnsignedLongLong(header->shape[i]);
+        if (!item) {
+            Py_DECREF(shape_tuple);
+            return NULL;
+        }
+        PyTuple_SetItem(shape_tuple, i, item);
+    }
+    return shape_tuple;
+}
+
+static PyArrayObject* create_array_from_header(const CacheHeader* header, void* data) {
+    PyArray_Descr* descr = PyArray_DescrFromType((int)header->dtype);
+    if (!descr) {
+        PyErr_SetString(PyExc_RuntimeError, "Unsupported dtype");
+        return NULL;
+    }
+    
+    npy_intp dims[MAX_DIMS];
+    for (int i = 0; i < (int)header->ndim; ++i) {
+        dims[i] = (npy_intp)header->shape[i];
+    }
+    
+    PyArrayObject* arr = (PyArrayObject*)PyArray_NewFromDescr(
+        &PyArray_Type,
+        descr,
+        (int)header->ndim,
+        dims,
+        NULL,
+        data,
+        NPY_ARRAY_OWNDATA,
+        NULL
+    );
+    
+    if (!arr) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to create NumPy array");
+    }
+    return arr;
+}
+
+static int validate_header_size(const CacheHeader* header) {
+    if (header->uncompressed_size > MAX_SIZE) {
+        PyErr_SetString(PyExc_RuntimeError, "Uncompressed size too large (>1GB)");
+        return -1;
+    }
+    if (header->uncompressed_size > INT_MAX) {
+        PyErr_SetString(PyExc_RuntimeError, "Uncompressed size too large for LZ4");
+        return -1;
+    }
+    return 0;
+}
+
+static PyObject* header_to_dict(const CacheHeader* header) {
+    PyObject* dict = PyDict_New();
+    if (!dict) return NULL;
+    
+    PyDict_SetItemString(dict, "magic", PyLong_FromUnsignedLong(header->magic));
+    PyDict_SetItemString(dict, "version", PyLong_FromUnsignedLong(header->version));
+    PyDict_SetItemString(dict, "ndim", PyLong_FromUnsignedLong(header->ndim));
+    PyDict_SetItemString(dict, "dtype", PyLong_FromUnsignedLong(header->dtype));
+    PyDict_SetItemString(dict, "uncompressed_size", PyLong_FromUnsignedLongLong(header->uncompressed_size));
+    PyDict_SetItemString(dict, "compressed_size", PyLong_FromUnsignedLongLong(header->compressed_size));
+    
+    PyObject* shape_tuple = shape_to_tuple(header);
+    if (!shape_tuple) {
+        Py_DECREF(dict);
+        return NULL;
+    }
+    PyDict_SetItemString(dict, "shape", shape_tuple);
+    Py_DECREF(shape_tuple);
+    
+    return (PyObject*)dict;
+}
+
 static PyObject* cache_save(PyObject* self, PyObject* args, PyObject* kwargs) {
   PyObject* obj = NULL;
   const char* path = NULL;
@@ -236,93 +314,91 @@ static PyObject* cache_save(PyObject* self, PyObject* args, PyObject* kwargs) {
 }
 
 static PyObject* cache_load(PyObject* self, PyObject* args) {
-  const char* path = NULL;
-  if (!PyArg_ParseTuple(args, "s", &path)) return NULL;
-
-  CacheHeader header;
-  void* compressed_data = NULL;
-
-  if (read_cache_file(path, &header, &compressed_data) != 0) return NULL;
-
-  if (header.uncompressed_size > MAX_SIZE) {
-    PyErr_SetString(PyExc_RuntimeError, "Uncompressed size too large (>1GB)");
-    free(compressed_data);
-    return NULL;
-  }
-
-  if (header.uncompressed_size > INT_MAX) {
-    PyErr_SetString(PyExc_RuntimeError, "Uncompressed size too large for LZ4");
-    free(compressed_data);
-    return NULL;
-  }
-
-  if (header.uncompressed_size == 0) {
-    free(compressed_data);
-    PyArray_Descr* descr = PyArray_DescrFromType((int)header.dtype);
-    if (!descr) {
-        PyErr_SetString(PyExc_RuntimeError, "Unsupported dtype");
+    const char* path = NULL;
+    if (!PyArg_ParseTuple(args, "s", &path)) return NULL;
+    
+    CacheHeader header;
+    void* compressed_data = NULL;
+    
+    if (read_cache_file(path, &header, &compressed_data) != 0) return NULL;
+    
+    if (validate_header_size(&header) != 0) {
+        free(compressed_data);
         return NULL;
     }
-    npy_intp dims[MAX_DIMS];
-    for (int i = 0; i < (int)header.ndim; ++i)
-        dims[i] = (npy_intp)header.shape[i];
-    return (PyObject*)PyArray_Zeros((int)header.ndim, dims, descr, 0);
-  }
-
-  void* decompressed_data = malloc(header.uncompressed_size);
-  if (!decompressed_data) {
-    PyErr_NoMemory();
+    
+    if (header.uncompressed_size == 0) {
+        free(compressed_data);
+        PyArray_Descr* descr = PyArray_DescrFromType((int)header.dtype);
+        if (!descr) {
+            PyErr_SetString(PyExc_RuntimeError, "Unsupported dtype");
+            return NULL;
+        }
+        npy_intp dims[MAX_DIMS];
+        for (int i = 0; i < (int)header.ndim; ++i)
+            dims[i] = (npy_intp)header.shape[i];
+        return (PyObject*)PyArray_Zeros((int)header.ndim, dims, descr, 0);
+    }
+    
+    void* decompressed_data = malloc(header.uncompressed_size);
+    if (!decompressed_data) {
+        PyErr_NoMemory();
+        free(compressed_data);
+        return NULL;
+    }
+    
+    int decompressed_size = LZ4_decompress_safe(
+        (const char*)compressed_data,
+        (char*)decompressed_data,
+        (int)header.compressed_size,
+        (int)header.uncompressed_size
+    );
     free(compressed_data);
-    return NULL;
-  }
+    
+    if (decompressed_size < 0) {
+        PyErr_SetString(PyExc_RuntimeError, "LZ4 decompression failed");
+        free(decompressed_data);
+        return NULL;
+    }
+    
+    if ((uint64_t)decompressed_size != header.uncompressed_size) {
+        PyErr_SetString(PyExc_RuntimeError, "Decompressed size mismatch");
+        free(decompressed_data);
+        return NULL;
+    }
+    
+    PyArrayObject* arr = create_array_from_header(&header, decompressed_data);
+    if (!arr) {
+        free(decompressed_data);
+        return NULL;
+    }
+    
+    return (PyObject*)arr;
+}
 
-  int decompressed_size = LZ4_decompress_safe((const char*)compressed_data,
-                                              (char*)decompressed_data,
-                                              (int)header.compressed_size,
-                                              (int)header.uncompressed_size);
-  free(compressed_data);
-
-  if (decompressed_size < 0) {
-    PyErr_SetString(PyExc_RuntimeError, "LZ4 decompression failed");
-    free(decompressed_data);
-    return NULL;
-  }
-
-  if ((uint64_t)decompressed_size != header.uncompressed_size) {
-    PyErr_SetString(PyExc_RuntimeError, "Decompressed size mismatch");
-    free(decompressed_data);
-    return NULL;
-  }
-
-  PyArray_Descr* descr = PyArray_DescrFromType((int)header.dtype);
-  if (!descr) {
-    PyErr_SetString(PyExc_RuntimeError, "Unsupported dtype");
-    free(decompressed_data);
-    return NULL;
-  }
-
-  npy_intp dims[MAX_DIMS];
-  for (int i = 0; i < (int)header.ndim; ++i)
-    dims[i] = (npy_intp)header.shape[i];
-
-  PyArrayObject* arr = (PyArrayObject*)PyArray_NewFromDescr(
-          &PyArray_Type,
-          descr,
-          (int)header.ndim,
-          dims,
-          NULL,
-          decompressed_data,
-          NPY_ARRAY_OWNDATA,
-          NULL
-  );
-
-  if (!arr) {
-    PyErr_SetString(PyExc_RuntimeError, "Failed to create NumPy array");
-    free(decompressed_data);
-    return NULL;
-  }
-
-  return (PyObject*)arr;
+static PyObject* inspect_header(PyObject* self, PyObject* args) {
+    const char* path = NULL;
+    if (!PyArg_ParseTuple(args, "s", &path)) return NULL;
+    
+    FILE* f = fopen(path, "rb");
+    if (!f) {
+        PyErr_Format(PyExc_IOError, "Cannot open file for reading: %s", strerror(errno));
+        return NULL;
+    }
+    
+    CacheHeader header;
+    if (fread(&header, sizeof(CacheHeader), 1, f) != 1) {
+        PyErr_SetString(PyExc_IOError, "Failed to read header (file too short or corrupt)");
+        fclose(f);
+        return NULL;
+    }
+    
+    if (fclose(f) != 0) {
+        PyErr_Format(PyExc_OSError, "Failed to close file: %s", strerror(errno));
+        return NULL;
+    }
+    
+    return header_to_dict(&header);
 }
 
 static PyMethodDef CacheMethods[] = {
@@ -347,6 +423,10 @@ static PyMethodDef CacheMethods[] = {
     "  numpy.ndarray\n"
     "Raises:\n"
     "  RuntimeError on invalid or corrupted file."
+  },
+  {"inspect", inspect_header, METH_VARARGS,
+     "Read and display the header of a cache file without loading the data.\n"
+     "Returns:\n A dictionary with magic, version, ndim, dtype, shape, sizes.\n"
   },
   {NULL, NULL, 0, NULL}
 };

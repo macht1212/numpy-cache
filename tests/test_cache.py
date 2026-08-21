@@ -11,6 +11,7 @@ from numpy_cache._cache import (
     MAX_DIMS,
     MAX_SIZE,
     VERSION,
+    inspect,
     load,
     save,
 )
@@ -217,3 +218,195 @@ def test_metadata_preserved(temp_file):
     assert loaded.shape == (2, 3, 4)
     assert loaded.dtype == np.int16
     np.testing.assert_array_equal(arr, loaded)
+
+def test_inspect_valid_file():
+    arr = np.random.randn(100, 100).astype(np.float32)
+    with tempfile.NamedTemporaryFile(suffix=".npc", delete=False) as f:
+        path = f.name
+
+    try:
+        save(arr, path)
+        info = inspect(path)
+
+        assert isinstance(info, dict)
+        assert "magic" in info
+        assert "version" in info
+        assert "ndim" in info
+        assert "dtype" in info
+        assert "uncompressed_size" in info
+        assert "compressed_size" in info
+        assert "shape" in info
+
+        assert info["magic"] == 0x4C5A4E43  # "LZNC"
+        assert info["version"] == 1
+        assert info["ndim"] == 2
+        assert info["dtype"] == np.dtype(np.float32).num  # 11
+        assert info["uncompressed_size"] >= 0
+        assert info["shape"] == (100, 100)
+        assert info["compressed_size"] > 0
+
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_inspect_empty_array():
+    arr = np.array([]).astype(np.float32)
+    with tempfile.NamedTemporaryFile(suffix=".npc", delete=False) as f:
+        path = f.name
+
+    try:
+        save(arr, path)
+        info = inspect(path)
+
+        assert info["ndim"] == 1
+        assert info["shape"] == (0,)
+        assert info["uncompressed_size"] == 0
+        assert info["compressed_size"] == 0
+
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_inspect_different_dtypes():
+    dtypes = [
+        np.float32, np.float64,
+        np.int8, np.int16, np.int32, np.int64,
+        np.uint8, np.uint16, np.uint32, np.uint64,
+        np.bool_
+    ]
+
+    for dtype in dtypes:
+        if dtype == np.bool_:
+            arr = np.random.choice([True, False], size=(10, 10))
+        else:
+            arr = np.random.randint(0, 100, size=(10, 10)).astype(dtype)
+
+        with tempfile.NamedTemporaryFile(suffix=".npc", delete=False) as f:
+            path = f.name
+
+        try:
+            save(arr, path)
+            info = inspect(path)
+            assert info["dtype"] == np.dtype(dtype).num
+            assert info["shape"] == (10, 10)
+            assert info["uncompressed_size"] > 0
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+
+
+def test_inspect_multidimensional():
+    shapes = [(10, 10, 10), (5, 6, 7, 8), (3, 4, 5, 6, 7)]
+
+    for shape in shapes:
+        arr = np.random.randn(*shape).astype(np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".npc", delete=False) as f:
+            path = f.name
+
+        try:
+            save(arr, path)
+            info = inspect(path)
+            assert info["ndim"] == len(shape)
+            assert info["shape"] == shape
+            assert info["uncompressed_size"] == np.prod(shape) * 4
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+
+
+def test_inspect_non_contiguous():
+    arr = np.random.randn(50, 50).astype(np.float32)
+    sliced = arr[::2, ::2]
+
+    with tempfile.NamedTemporaryFile(suffix=".npc", delete=False) as f:
+        path = f.name
+
+    try:
+        save(sliced, path)
+        info = inspect(path)
+        assert info["shape"] == (25, 25)
+        assert info["uncompressed_size"] == 25 * 25 * 4
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_inspect_nonexistent_file():
+    with pytest.raises(IOError, match="Cannot open file for reading"):
+        inspect("/nonexistent/file/path.npc")
+
+
+def test_inspect_invalid_file():
+    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
+        path = f.name
+        f.write(b"This is not a numpy-cache file")
+
+    try:
+        with pytest.raises(OSError, match="Failed to read header"):
+            inspect(path)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_inspect_corrupted_header():
+    arr = np.random.randn(10, 10).astype(np.float32)
+    with tempfile.NamedTemporaryFile(suffix=".npc", delete=False) as f:
+        path = f.name
+
+    try:
+        save(arr, path)
+
+        with open(path, "r+b") as f:
+            f.seek(0)
+            f.write(b"\x00\x01\x02\x03")
+
+        info = inspect(path)
+        assert isinstance(info, dict)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_inspect_very_large_ndim():
+    arr = np.random.randn(10, 10).astype(np.float32)
+    with tempfile.NamedTemporaryFile(suffix=".npc", delete=False) as f:
+        path = f.name
+
+    try:
+        save(arr, path)
+
+        with open(path, "r+b") as f:
+            f.seek(88)
+            f.write(b"\xFF\xFF\xFF\xFF")
+
+        try:
+            info = inspect(path)
+            assert info["ndim"] > 1000
+        except (MemoryError, OverflowError, ValueError, SystemError):
+            pass
+
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_inspect_acceleration_parameter():
+    accelerations = [1, 4, 16]
+
+    for accel in accelerations:
+        arr = np.random.randn(100, 100).astype(np.float32)
+        with tempfile.NamedTemporaryFile(suffix=".npc", delete=False) as f:
+            path = f.name
+
+        try:
+            save(arr, path, acceleration=accel)
+            info = inspect(path)
+            assert info["shape"] == (100, 100)
+            assert info["dtype"] == np.dtype(np.float32).num
+            assert info["compressed_size"] > 0
+        finally:
+            if os.path.exists(path):
+                os.remove(path)

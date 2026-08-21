@@ -1,6 +1,6 @@
 [project]
 name = "numpy-cache"
-version = "0.1.0"
+version = "0.1.2"
 description = "High-performance LZ4 cache for NumPy arrays"
 authors = [
     {name = "@macht1212", email = "nasimov.alexander@gmail.com"}

@@ -6,6 +6,7 @@ from ._cache import (
     MAX_DIMS,
     MAX_SIZE,
     VERSION,
+    inspect,
     load,
     save,
 )
@@ -19,7 +20,8 @@ __all__ = [
     "MAGIC", 
     "MAX_DIMS", 
     "MAX_SIZE", 
-    "VERSION", 
+    "VERSION",
+    "inspect", 
     "load", 
     "save"
 ]
