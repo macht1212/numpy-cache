@@ -1,14 +1,14 @@
-[project]
+[tool.poetry]
 name = "numpy-cache"
 version = "0.1.0"
 description = "High-performance LZ4 cache for NumPy arrays"
 authors = [
-    {name = "macht1212",email = "nasimov.alexander@gmail.com"}
+    {name = "@macht1212",email = "nasimov.alexander@gmail.com"}
 ]
 license = {text = "Apache 2.0"}
 readme = "README.md"
-repository = "https://github.com/yourusername/numpy-cache"
-homepage = "https://github.com/yourusername/numpy-cache"
+repository = "https://github.com/macht1212/numpy-cache"
+homepage = "https://github.com/macht1212/numpy-cache"
 keywords = ["numpy", "cache", "compression", "lz4"]
 classifiers = [
     "Development Status :: 4 - Beta",
