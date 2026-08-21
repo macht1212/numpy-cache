@@ -1,6 +1,25 @@
 # Changelog
 
-## [0.1.0] – 2026-08-21
+## [0.1.2] – 2026-08-xx
+### Added
+- New `inspect()` function to read and display the header of a cache file without loading the actual data. Returns a dictionary containing magic, version, ndim, dtype, shape, and sizes.
+- Supporting C helper functions: `shape_to_tuple`, `create_array_from_header`, `validate_header_size`, and `header_to_dict` for cleaner and safer header handling.
+- Comprehensive test suite for the `inspect` functionality, covering valid files, empty arrays, multiple dtypes, multidimensional arrays, non‑contiguous arrays, and edge cases.
+
+### Changed
+- Refactored `cache_load` by extracting common operations into reusable helper functions, improving code readability and maintainability.
+- Exposed inspect in the public API via `numpy_cache/__init__.py`.
+
+### Fixed
+- None.
+
+### Deprecated
+- None.
+
+### Removed
+- None
+
+## [0.1.1] – 2026-08-21
 
 ### Added
 - None.
