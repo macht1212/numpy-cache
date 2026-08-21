@@ -1,0 +1,30 @@
+[project]
+name = "numpy-cache"
+version = "0.1.0"
+description = "High-performance LZ4 cache for NumPy arrays"
+authors = [
+    {name = "macht1212",email = "nasimov.alexander@gmail.com"}
+]
+license = {text = "Apache 2.0"}
+readme = "README.md"
+requires-python = ">=3.12,<4.0.0"
+dependencies = [
+    "numpy (>=2.5.2,<3.0.0)"
+]
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-benchmark (>=5.2.3,<6.0.0)",
+    "ruff (>=0.16.4,<0.17.0)",
+    "setuptools (>=84.0.0,<85.0.0)"
+]
+
+
+[build-system]
+requires = ["setuptools>=61.0", "numpy>=1.20.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["numpy_cache*"]
