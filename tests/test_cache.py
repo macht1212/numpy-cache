@@ -18,7 +18,6 @@ from numpy_cache._cache import (
 
 @pytest.fixture
 def temp_file():
-    """Создаёт временный файл и удаляет его после теста."""
     fd, path = tempfile.mkstemp(suffix=".npc")
     os.close(fd)
     yield path
@@ -28,7 +27,6 @@ def temp_file():
 
 @pytest.fixture
 def sample_array():
-    """Базовый массив для тестов."""
     return np.random.randn(100, 100).astype(np.float32)
 
 def test_roundtrip(temp_file, sample_array):
