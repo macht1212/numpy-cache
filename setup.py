@@ -9,7 +9,12 @@ np_include = np.get_include()
 
 lz4_include_dirs = []
 
-standard_paths = ["/usr/include", "/usr/local/include", "/opt/homebrew/include"]
+standard_paths = [
+    "/usr/include",
+    "/usr/local/include",
+    "/opt/homebrew/include",
+]
+
 for path in standard_paths:
     if os.path.exists(os.path.join(path, "lz4.h")):
         lz4_include_dirs.append(path)
@@ -23,9 +28,11 @@ if not lz4_include_dirs:
             text=True,
             check=True,
         )
+
         for flag in result.stdout.split():
             if flag.startswith("-I"):
                 lz4_include_dirs.append(flag[2:])
+
     except (subprocess.CalledProcessError, FileNotFoundError):
         pass
 
@@ -35,6 +42,7 @@ if not lz4_include_dirs:
             if "lz4.h" in files:
                 lz4_include_dirs.append(root)
                 break
+
         if lz4_include_dirs:
             break
 
@@ -44,11 +52,16 @@ if not lz4_include_dirs:
     )
 
 library_dirs = []
-for libdir in ["/usr/lib", "/usr/local/lib", "/opt/homebrew/lib"]:
+
+for libdir in [
+    "/usr/lib",
+    "/usr/local/lib",
+    "/opt/homebrew/lib",
+]:
     if os.path.exists(libdir):
         library_dirs.append(libdir)
 
-extra_compile_args = ["-O3", "-march=native"] if sys.platform != "win32" else []
+extra_compile_args = ["-O3"] if sys.platform != "win32" else []
 
 cache_module = Extension(
     "numpy_cache._cache",
@@ -63,11 +76,12 @@ print("=== Build configuration ===")
 print(f"NumPy include: {np_include}")
 print(f"LZ4 include paths: {lz4_include_dirs}")
 print(f"Library dirs: {library_dirs}")
+print(f"Compile args: {extra_compile_args}")
 print("===========================")
 
 setup(
     name="numpy-cache",
-    version="1.0.0",
+    version="0.1.0",
     packages=["numpy_cache"],
     package_dir={"": "src"},
     ext_modules=[cache_module],
