@@ -325,6 +325,62 @@ static PyObject* cache_load(PyObject* self, PyObject* args) {
   return (PyObject*)arr;
 }
 
+static PyObject* inspect_header(PyObject* self, PyObject* args) {
+  const char* path = NULL;
+  if (!PyArg_ParseTuple(args, "s", &path))
+      return NULL;
+
+  FILE* f = fopen(path, "rb");
+  if (!f) {
+      PyErr_Format(PyExc_IOError, "Cannot open file for reading: %s", strerror(errno));
+      return NULL;
+  }
+
+  CacheHeader header;
+  size_t n_bytes = sizeof(header);
+
+  if (fread(&header, n_bytes, 1, f) != 1) {
+      PyErr_SetString(PyExc_IOError, "Failed to read header (file too short or corrupt)");
+      fclose(f);
+      return NULL;
+  }
+
+  if (fclose(f) != 0) {
+      PyErr_Format(PyExc_OSError, "Failed to close file: %s", strerror(errno));
+      return NULL;
+  }
+
+  PyObject* dict = PyDict_New();
+  if (!dict)
+      return NULL;
+
+  PyDict_SetItemString(dict, "magic", PyLong_FromUnsignedLong(header.magic));
+  PyDict_SetItemString(dict, "version", PyLong_FromUnsignedLong(header.version));
+  PyDict_SetItemString(dict, "ndim", PyLong_FromUnsignedLong(header.ndim));
+  PyDict_SetItemString(dict, "dtype", PyLong_FromUnsignedLong(header.dtype));
+  PyDict_SetItemString(dict, "uncompressed_size", PyLong_FromUnsignedLongLong(header.uncompressed_size));
+  PyDict_SetItemString(dict, "compressed_size", PyLong_FromUnsignedLongLong(header.compressed_size));
+
+  PyObject* shape_tuple = PyTuple_New(header.ndim);
+  if (!shape_tuple) {
+      Py_DECREF(dict);
+      return NULL;
+  }
+  for (uint32_t i = 0; i < header.ndim; ++i) {
+      PyObject* item = PyLong_FromUnsignedLongLong(header.shape[i]);
+      if (!item) {
+          Py_DECREF(shape_tuple);
+          Py_DECREF(dict);
+          return NULL;
+      }
+      PyTuple_SetItem(shape_tuple, i, item);
+  }
+  PyDict_SetItemString(dict, "shape", shape_tuple);
+  Py_DECREF(shape_tuple);
+
+  return dict;
+}
+
 static PyMethodDef CacheMethods[] = {
   {"save", (PyCFunction)cache_save, METH_VARARGS | METH_KEYWORDS, 
     "Save a NumPy array with LZ4 compression.\n"
@@ -347,6 +403,10 @@ static PyMethodDef CacheMethods[] = {
     "  numpy.ndarray\n"
     "Raises:\n"
     "  RuntimeError on invalid or corrupted file."
+  },
+  {"inspect", inspect_header, METH_VARARGS,
+     "Read and display the header of a cache file without loading the data.\n"
+     "Returns:\n A dictionary with magic, version, ndim, dtype, shape, sizes.\n"
   },
   {NULL, NULL, 0, NULL}
 };
