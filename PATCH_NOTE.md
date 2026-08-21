@@ -1,3 +1,10 @@
+# Patch Notes – numpy-cache v0.1.1 (CI & PyPI Release Fix)
+
+## Overview
+
+Version 0.1.1 is a **maintenance release** that addresses issues with the project's CI/CD pipeline and PyPI publication process. While the library code remained stable and unchanged from v0.1.0, the build and deployment tooling has been improved to ensure reliable automated releases and better compatibility with modern Python packaging standards.
+
+
 # Patch Notes – numpy-cache v0.1.0 (Stabilisation Patch)
 
 *This document describes the major bug fixes and improvements introduced in version 0.1.0, resolving all known issues from the prototype (v0.0.1).*

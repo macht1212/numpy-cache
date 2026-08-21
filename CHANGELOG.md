@@ -3,6 +3,23 @@
 ## [0.1.0] – 2026-08-21
 
 ### Added
+- None.
+
+### Changed
+- CI, release, setup.py
+
+### Fixed
+- Problems with PyPi publishing.
+
+### Deprecated
+- None.
+
+### Removed
+- None
+
+## [0.1.0] – 2026-08-21
+
+### Added
 - **Configurable acceleration** – `acceleration` parameter (1–16) for LZ4 compression speed/ratio trade‑off (default 4).
 - **Support for empty arrays** – zero‑size arrays are now saved and loaded correctly.
 - **Packed binary header** – `#pragma pack(push, 1)` ensures portability across compilers and architectures.

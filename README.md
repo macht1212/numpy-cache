@@ -110,7 +110,8 @@ save(slice_arr, 'slice.npc')  # Handles automatically
 ## 📊 Benchmarks
 ### Test system:
 
-- Ubuntu 24.04.4 LTS, 12th Gen Intel i5-1235U (12 cores), 16 GB RAM, NVMe SSD
+- Ubuntu 24.04.4 LTS, 12th Gen Intel i5-1235U (10 cores), 16 GB RAM, SSD
+- MacOS 15.7.2, Apple Silicon M1 (8 cores), 8 GB RAM, SSD  
 - Python 3.12, NumPy 2.5.2, LZ4 1.9.4
 
 All arrays are `float32`. Sizes:
@@ -120,25 +121,25 @@ All arrays are `float32`. Sizes:
 
 ### Write Performance (time in μs)
 
-| Method| 	0.04 MB| 	1 MB| 
-|-------|----------|--------|
-| `np.save`| 	89.6| 	879.6| 
-| `np.savez`| 	117.4| 	1 083.0| 
-| `np.savez_compressed`| 	1 056.1| 	28 921.5| 
-| **numpy_cache (accel=1)**| 	**71.8**| 	**759.4**| 
-| **numpy_cache (accel=4)**| 	**70.1**| 	**755.6**| 
-| **numpy_cache (accel=16)**| 	**74.9**| 	**738.9**| 
+| Method| Intel i5 <br>	0.04 MB| Intel i5 <br>	1 MB|  Apple M1 <br> 0.04 MB|  Apple M1 <br>	1 MB|
+|-------|----------|--------|--------|------|
+| `np.save`| 	89.6| 	879.6| 86.2 | 548.1 |
+| `np.savez`| 	117.4| 	1 083.0| 94.5 | 554.4 |
+| `np.savez_compressed`| 	1 056.1| 	28 921.5| 1 034.0 | 32 211.2 |
+| **numpy_cache (accel=1)**| 	**71.8**| 	**759.4**| **67.8** | **770.1** |
+| **numpy_cache (accel=4)**| 	**70.1**| 	**755.6**| **64.9** | **635.4** |
+| **numpy_cache (accel=16)**| 	**74.9**| 	**738.9**| **68.0** | **655.2** |
 
 ### Read Performance (time in μs)
 
-| Method| 	0.04 MB| 	1 MB| 
-|-------|----------|--------|
-| `np.save`| 	41.7| 	91.9| 
-| `np.savez`| 	83.0| 	401.1| 
-| `np.savez_compressed`| 	267.5| 	4 858.8| 
-| **numpy_cache (accel=1)**| 	**19.2**| 	**385.0**| 
-| **numpy_cache (accel=4)**| 	**17.5**| 	**421.0**| 
-| **numpy_cache (accel=16)**| 	**17.0**| 	**474.5**| 
+| Method| Intel i5 <br>	0.04 MB| Intel i5 <br>	1 MB|  Apple M1 <br> 0.04 MB|  Apple M1 <br>	1 MB|
+|-------|----------|--------|--------|------|
+| `np.save`| 	41.7| 	91.9| 44.8 | 77.3 |
+| `np.savez`| 	83.0| 	401.1| 95.1 | 225.2 |
+| `np.savez_compressed`| 	267.5| 	4 858.8| 193.7 | 2 876.7 |
+| **numpy_cache (accel=1)**| 	**19.2**| 	**385.0**| **32.7** | **327.1** |
+| **numpy_cache (accel=4)**| 	**17.5**| 	**421.0**| **23.8** | **665.8** |
+| **numpy_cache (accel=16)**| 	**17.0**| 	**474.5**| **19.7** | **187.1** |
 
 ### File Size Comparison (1 MB array)
 - `np.save` / `np.savez`: ~1.0 MB
