@@ -1,0 +1,47 @@
+# This workflow will build the package and publish it to PyPI when a release is created.
+# It uses Trusted Publishing (OIDC) – no API token required.
+
+name: Upload Python Package
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # required for trusted publishing
+    environment:
+      name: pypi
+      url: https://pypi.org/p/numpy-cache
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblz4-dev
+
+      - name: Install Poetry
+        run: |
+          pip install poetry
+
+      - name: Build package
+        run: |
+          poetry build
+
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
