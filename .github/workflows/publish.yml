@@ -24,6 +24,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'poetry'
 
       - name: Install system dependencies
         run: |
@@ -31,13 +32,10 @@ jobs:
           sudo apt-get install -y liblz4-dev
 
       - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: pipx install poetry
 
       - name: Build package
-        run: |
-          poetry build
+        run: poetry build
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
