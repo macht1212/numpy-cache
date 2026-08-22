@@ -2,7 +2,7 @@
 ### High‑performance, lightweight disk cache for NumPy arrays with LZ4 compression – now with configurable compression speed.
 
 [![CI](https://github.com/macht1212/numpy-cache/actions/workflows/ci.yml/badge.svg)](https://github.com/macht1212/numpy-cache/actions/workflows/ci.yml)  
-[![Python](https://img.shields.io/badge/Python-3.12%20|%203.13%20|%203.14%20|%203.15-blue)](https://www.python.org/) ![](/icons/NumPy-2.5.2-blue.svg) ![](/icons/License-Apache%202.0-blue.svg)
+[![Python](https://img.shields.io/badge/Python-3.12%20|%203.13%20|%203.14-blue)](https://www.python.org/) ![](/icons/NumPy-2.5.2-blue.svg) ![](/icons/License-Apache%202.0-blue.svg)
 
 ## 📌 The Problem
 When dealing with large NumPy arrays, developers face a classic trade‑off:
