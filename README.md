@@ -7,11 +7,11 @@
 ## 📌 The Problem
 When dealing with large NumPy arrays, developers face a classic trade‑off:
 
-| Method |	Speed (100 MB) |	File Size |	Issue |
-|--------|-----------------|--------------|-------|
-| `np.save()` / `np.savez()` |	~45 ms |	100 MB |	Huge storage, slow network transfer |
-| `np.savez_compressed()` |	~3.6 s |	~90 MB |	Single‑threaded DEFLATE (zlib) is too slow |
-| **numpy_cache** |	**~100 ms** |	**~40‑50 MB** |	**Best of both worlds** ✅ |
+| Method |	Speed (100 MB)  |	Issue |
+|--------|-----------------|-------|
+| `np.save()` / `np.savez()` |	~45 ms |	Huge storage, slow network transfer |
+| `np.savez_compressed()` |	~3.6 s |	Single‑threaded DEFLATE (zlib) is too slow |
+| **numpy_cache** |	**~100 ms** |	**Best of both worlds** ✅ |
 
 There is a clear gap: no lightweight, specialised solution combines `np.save()` speed with good compression – until now.
 
