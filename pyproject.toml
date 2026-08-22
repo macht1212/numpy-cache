@@ -20,6 +20,7 @@ classifiers = [
 ]
 dependencies = [
     "numpy>=2.5.2,<3.0.0",
+    "click (>=8.4.2,<9.0.0)",
 ]
 
 [project.urls]
@@ -41,3 +42,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["numpy_cache*"]
+
+[tool.poetry.scripts]
+numpy-cache = "numpy_cache.__main__:cli"
