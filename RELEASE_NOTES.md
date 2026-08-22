@@ -1,3 +1,54 @@
+# Release Notes – numpy-cache v0.1.2 🚀
+
+## Overview
+
+This release introduces a new **header inspection** capability, allowing users to peek into cache files without loading the actual array data. It also adds a **command‑line interface (CLI)** for quick file inspection from the terminal, and includes significant internal refactoring for better code maintainability.
+
+---
+
+## New Features
+
+### 📋 Header Inspection (`inspect()`)
+
+A new `inspect()` function is now available in the Python API. It reads the file header and returns a dictionary containing:
+
+- `magic` – file format identifier
+- `version` – cache format version
+- `ndim` – number of dimensions
+- `dtype` – NumPy data type code
+- `uncompressed_size` – original array size in bytes
+- `compressed_size` – compressed payload size in bytes
+- `shape` – array dimensions as a tuple
+
+This is useful for debugging, validating file integrity, and inspecting metadata without decompression overhead.
+
+### 🖥️ Command‑Line Interface (CLI)
+
+A new `numpy-cache` console script is now available. The first command implemented is `inspect`, which displays cache file headers directly in the terminal.
+
+The CLI is built with **Click** and registered as both a Poetry script and a setuptools entry point, ensuring compatibility across installation methods.
+
+---
+
+## Internal Improvements
+
+### Code Refactoring
+
+Common operations have been extracted into reusable helper functions, improving code readability and maintainability:
+
+- `shape_to_tuple` – converts header shape to a Python tuple
+- `create_array_from_header` – constructs a NumPy array from header + data
+- `validate_header_size` – checks uncompressed size limits
+- `header_to_dict` – converts header to a Python dictionary
+
+These changes reduce duplication across the codebase and make future enhancements easier.
+
+## Dependency Changes
+
+- Added `click` (≥8.4.2) as a dependency for the CLI.
+
+---
+
 # Release 0.1.1 – CI & PyPI Maintenance Release 🔧
 
 **Release date:** 2026-08-21
