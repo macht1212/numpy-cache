@@ -86,4 +86,9 @@ setup(
     package_dir={"": "src"},
     ext_modules=[cache_module],
     zip_safe=False,
+    entry_points={
+    'console_scripts': [
+        'numpy-cache=numpy_cache.__main__:cli',
+        ],
+    },
 )
